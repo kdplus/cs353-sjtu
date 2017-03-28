@@ -8,10 +8,19 @@
 #include <linux/uaccess.h>
 #include <linux/fs.h>
 #include <linux/slab.h>
+#define MAX_BAKA 10
 MODULE_LICENSE("Dual BSD/GPL");
 MODULE_AUTHOR("Mika");
+
+// module_param
 static int baka_num;
 module_param(baka_num, int, 0644);
+static char *namae = "Baka!\0";
+module_param(namae, charp, 0644);
+static int bakas[MAX_BAKA];
+static int nr_baka = 0;
+module_param_array(bakas, int, &nr_baka, 0664);
+
 
 // static int(*oldcall)(void);
 struct proc_dir_entry *test_dir, *test_file;
@@ -30,8 +39,8 @@ static ssize_t mika_write(struct file *file, const char __user *buffer, size_t c
     }
     return count;
 }
-*/
 
+*/
 static ssize_t mika_write(struct file *file, const char __user *buffer, size_t count, loff_t *f_pos) {
     char *tmp = kzalloc((count+1), GFP_KERNEL);
     if(!tmp) return -ENOMEM;
@@ -39,7 +48,6 @@ static ssize_t mika_write(struct file *file, const char __user *buffer, size_t c
         kfree(tmp);
         return EFAULT;
     }
-    kfree(baka_name);
     baka_name = tmp;
     return count;
 }
@@ -58,9 +66,17 @@ static const struct file_operations mika_fops = {
 };
 
 static int __init  hello_init(void){
-    printk(KERN_INFO "Connichiwa~ Baka No.%d Mihoyo desu~!\n", baka_num);
-
-    struct proc_dir_entry *entry = NULL;
+    int i = 0;
+    printk(KERN_INFO "Connichiwa~ Baka No.%d\n Eto your name is %s!\n", baka_num, namae);
+    printk(KERN_INFO "All right let's count bakas!\n");
+    if (nr_baka == 0)
+        printk(KERN_INFO "Amazing! no one is baka except you!\n");
+    else {
+        for (i = 0; i < nr_baka; ++i) {
+            printk(KERN_INFO "Aha this is BAKA_%d and his baka_num is No.%d~\n", i, bakas[i]);
+        }
+        printk(KERN_INFO "No baka anymore? QAQ!\n");
+    }
     test_dir = proc_mkdir("Mika_chigen", NULL);
     test_file = proc_create("Connichiwa", S_IFREG|S_IRUGO|S_IWUSR, test_dir, &mika_fops);
     if (!test_file) {
@@ -71,7 +87,7 @@ static int __init  hello_init(void){
 }
 
 static void __exit  hello_exit(void){
-    printk(KERN_INFO "Urusai na! BAKA No.%d!\n", baka_num);
+    printk(KERN_INFO "Urusai na! %s is BAKA No.%d!\n", namae, baka_num);
     remove_proc_entry("Connichiwa", test_dir);
     remove_proc_entry("Mika_chigen", NULL);
 }

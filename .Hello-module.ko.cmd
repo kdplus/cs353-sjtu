@@ -1,1 +1,1 @@
-cmd_/home/yusn/cs353/Hello-module.ko := ld -r -m elf_x86_64 -T ./scripts/module-common.lds --build-id  -o /home/yusn/cs353/Hello-module.ko /home/yusn/cs353/Hello-module.o /home/yusn/cs353/Hello-module.mod.o
+cmd_/home/yusn/cs353/Hello-module.ko := ld -r -m elf_x86_64 -T ./scripts/module-common.lds --build-id  -o /home/yusn/cs353/Hello-module.ko /home/yusn/cs353/Hello-module.o /home/yusn/cs353/Hello-module.mod.o ;  true
