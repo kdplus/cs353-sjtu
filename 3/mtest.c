@@ -112,7 +112,7 @@ static void mika_write_val(unsigned long addr, unsigned long val) {
     vma = find_vma(mm, addr);
     if (vma && addr >= vma->vm_start && (addr + sizeof(val)) < vma->vm_end) {
         if (!(vma->vm_flags & VM_WRITE)) {
-            printk(KERN_INFO "You don't right of writing\n");
+            printk(KERN_INFO "You don't have the right of writing\n");
             goto out;
         }
         page = mika_follow_page(vma, addr);
