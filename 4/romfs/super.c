@@ -77,13 +77,6 @@
 #include <linux/major.h>
 #include "internal.h"
 
-static char* hided_file_name;
-static char* encry_file_name;
-static char* addex_file_name;
-module_param(hided_file_name, charp, 0644);
-module_param(encry_file_name, charp, 0644);
-module_param(addex_file_name, charp, 0644);
-
 static struct kmem_cache *romfs_inode_cachep;
 
 static const umode_t romfs_modemap[8] = {
@@ -113,8 +106,6 @@ static int romfs_readpage(struct file *file, struct page *page)
 	unsigned long fillsize, pos;
 	void *buf;
 	int ret;
-	int j;
-        char fsname[ROMFS_MAXFN];
 
 	buf = kmap(page);
 	if (!buf)
@@ -131,29 +122,12 @@ static int romfs_readpage(struct file *file, struct page *page)
 
 		pos = ROMFS_I(inode)->i_dataoffset + offset;
 
-		j = romfs_dev_strnlen(inode->i_sb, ROMFS_I(inode)->i_dataoffset - ROMFS_I(inode)->i_metasize + ROMFH_SIZE, ROMFS_MAXFN);
-		if (j < 0)
-			goto out;
-
-		ret = romfs_dev_read(inode->i_sb, ROMFS_I(inode)->i_dataoffset - ROMFS_I(inode)->i_metasize + ROMFH_SIZE, fsname, j);
-		if (ret < 0)
-			goto out;
-
-		fsname[j] = '\0';
-		
 		ret = romfs_dev_read(inode->i_sb, pos, buf, fillsize);
 		if (ret < 0) {
 			SetPageError(page);
 			fillsize = 0;
 			ret = -EIO;
 		}
-		if(encry_file_name != NULL){
-			if(strcmp(fsname, encry_file_name) == 0){
-				memset(buf, '*', fillsize-1);
-				*((char *)buf + fillsize-1) = '\n';	
-			}
-		}
-		
 	}
 
 	if (fillsize < PAGE_SIZE)
@@ -164,7 +138,6 @@ static int romfs_readpage(struct file *file, struct page *page)
 	flush_dcache_page(page);
 	kunmap(page);
 	unlock_page(page);
-out:
 	return ret;
 }
 
@@ -218,21 +191,15 @@ static int romfs_readdir(struct file *file, struct dir_context *ctx)
 		if (ret < 0)
 			goto out;
 		fsname[j] = '\0';
-		
-		if(hided_file_name != NULL)
-			ret = romfs_dev_strcmp(i->i_sb,  offset + ROMFH_SIZE, hided_file_name, j); // return 1 if matched, 0 if differ
-		else
-			ret = 0;	
 
 		ino = offset;
 		nextfh = be32_to_cpu(ri.next);
 		if ((nextfh & ROMFH_TYPE) == ROMFH_HRD)
 			ino = be32_to_cpu(ri.spec);
-		if(ret != 1) {
-			if (!dir_emit(ctx, fsname, j, ino,
-			    		romfs_dtype_table[nextfh & ROMFH_TYPE]))
-				goto out;
-		}
+		if (!dir_emit(ctx, fsname, j, ino,
+			    romfs_dtype_table[nextfh & ROMFH_TYPE]))
+			goto out;
+
 		offset = nextfh & ROMFH_MASK;
 	}
 out:
@@ -264,9 +231,6 @@ static struct dentry *romfs_lookup(struct inode *dir, struct dentry *dentry,
 	name = dentry->d_name.name;
 	len = dentry->d_name.len;
 
- 	if(hided_file_name != NULL && (strcmp(name, hided_file_name) == 0))
-		goto out0;
-
 	for (;;) {
 		if (!offset || offset >= maxoff)
 			goto out0;
@@ -292,13 +256,6 @@ static struct dentry *romfs_lookup(struct inode *dir, struct dentry *dentry,
 		offset = be32_to_cpu(ri.spec) & ROMFH_MASK;
 
 	inode = romfs_iget(dir->i_sb, offset);
-	
-	if(addex_file_name != NULL){
-		if(strcmp(name, addex_file_name) == 0){
-			inode->i_mode = inode->i_mode | S_IXUGO;
-		}
-	}
-
 	if (IS_ERR(inode)) {
 		ret = PTR_ERR(inode);
 		goto error;
