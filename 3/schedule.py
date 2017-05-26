@@ -93,7 +93,7 @@ while True:
     print (" ")
 
     print "Schedule decision:"
-    if float(cpu_status) < s.c and int(mem_status) < 1700:
+    if float(cpu_status) < s.c and int(mem_status) < 1200:
         s.run()
     else:
         if not s.pq.empty():
